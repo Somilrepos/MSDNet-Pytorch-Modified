@@ -88,13 +88,6 @@ class Tester(object):
 
         return ts_logits, ts_targets
 
-
-def _build_probs_path(base_path, split_name):
-    if base_path.endswith('.pt') or base_path.endswith('.pth'):
-        return base_path
-    os.makedirs(base_path, exist_ok=True)
-    return os.path.join(base_path, 'softmax_probs_{}.pth'.format(split_name))
-
     def dynamic_eval_find_threshold(self, logits, targets, p, flops):
         """
             logits: m * n * c
@@ -169,3 +162,9 @@ def _build_probs_path(base_path, split_name):
             acc_all += acc_rec[k]
 
         return acc * 100.0 / n_sample, expected_flops
+
+def _build_probs_path(base_path, split_name):
+    if base_path.endswith('.pt') or base_path.endswith('.pth'):
+        return base_path
+    os.makedirs(base_path, exist_ok=True)
+    return os.path.join(base_path, 'softmax_probs_{}.pth'.format(split_name))
