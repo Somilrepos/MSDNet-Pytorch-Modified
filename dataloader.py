@@ -1,8 +1,43 @@
+import os
 import torch
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-import os
+from torch.utils.data import Dataset
+from torchvision.datasets.folder import default_loader
+
+
+class FlatImageNetVal(Dataset):
+    def __init__(self, valdir, val_txt, synset_mapping, transform=None):
+        self.valdir = valdir
+        self.transform = transform
+        self.loader = default_loader
+
+        with open(synset_mapping, 'r') as f:
+            synsets = [line.strip().split()[0] for line in f if line.strip()]
+        self.class_to_idx = {syn: idx for idx, syn in enumerate(synsets)}
+
+        self.samples = []
+        with open(val_txt, 'r') as f:
+            for line in f:
+                parts = line.strip().split()
+                if len(parts) < 2:
+                    continue
+                img_id, synset = parts[0], parts[1]
+                if synset not in self.class_to_idx:
+                    continue
+                path = os.path.join(valdir, '{}.JPEG'.format(img_id))
+                self.samples.append((path, self.class_to_idx[synset]))
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, index):
+        path, target = self.samples[index]
+        img = self.loader(path)
+        if self.transform is not None:
+            img = self.transform(img)
+        return img, target
 
 
 def get_dataloaders(args):
@@ -50,6 +85,8 @@ def get_dataloaders(args):
         # ImageNet
         traindir = os.path.join(args.data_root, 'train')
         valdir = os.path.join(args.data_root, 'val')
+        val_txt = os.path.join(args.data_root, '..', 'ImageSets', 'CLS-LOC', 'val.txt')
+        synset_mapping = os.path.join(args.data_root, '..', '..', 'LOC_synset_mapping.txt')
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                          std=[0.229, 0.224, 0.225])
         train_set = None
@@ -60,16 +97,27 @@ def get_dataloaders(args):
                 transforms.ToTensor(),
                 normalize
             ]))
-        val_set = datasets.ImageFolder(valdir, transforms.Compose([
+        val_transform = transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
             transforms.ToTensor(),
             normalize
-        ]))
+        ])
+        has_class_dirs = False
+        if os.path.isdir(valdir):
+            for entry in os.listdir(valdir):
+                if os.path.isdir(os.path.join(valdir, entry)):
+                    has_class_dirs = True
+                    break
+        if has_class_dirs:
+            val_set = datasets.ImageFolder(valdir, val_transform)
+        else:
+            val_set = FlatImageNetVal(valdir, val_txt, synset_mapping, val_transform)
         if args.verbose:
             print('Dataset: ImageNet')
             print('Train dir: {}'.format(traindir))
             print('Val dir: {}'.format(valdir))
+            print('Val layout: {}'.format('class-folders' if has_class_dirs else 'flat'))
     if args.use_valid:
         train_set_index = torch.randperm(len(train_set))
         if os.path.exists(os.path.join(args.save, 'index.pth')):
