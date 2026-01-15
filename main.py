@@ -43,6 +43,10 @@ import torch.nn.functional as F
 import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.optim
+try:
+    from tqdm import tqdm
+except ImportError:
+    tqdm = None
 
 torch.manual_seed(args.seed)
 
@@ -224,7 +228,10 @@ def validate(val_loader, model, criterion, save_probs_path=None):
 
     end = time.time()
     with torch.no_grad():
-        for i, (input, target) in enumerate(val_loader):
+        loader_iter = val_loader
+        if tqdm is not None:
+            loader_iter = tqdm(val_loader, desc='Eval', leave=False)
+        for i, (input, target) in enumerate(loader_iter):
             target = target.cuda(device=None)
             input = input.cuda()
 
