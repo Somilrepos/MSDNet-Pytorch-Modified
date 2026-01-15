@@ -21,6 +21,9 @@ args = arg_parser.parse_args()
 if args.gpu:
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 
+if not hasattr(args, 'save') or args.save is None:
+    args.save = os.path.join('save', 'default-{}'.format(time.time()))
+
 args.grFactor = list(map(int, args.grFactor.split('-')))
 args.bnFactor = list(map(int, args.bnFactor.split('-')))
 args.nScales = len(args.grFactor)
