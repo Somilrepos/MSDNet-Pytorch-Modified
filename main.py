@@ -63,12 +63,16 @@ def main():
     else:
         IM_SIZE = 224
 
+    if args.verbose:
+        print('Building model for FLOPs/params measurement...')
     model = getattr(models, args.arch)(args)
     n_flops, n_params = measure_model(model, IM_SIZE, IM_SIZE)    
     torch.save(n_flops, os.path.join(args.save, 'flops.pth'))
     del(model)
-        
-        
+
+    if args.verbose:
+        print('FLOPs and params saved to: {}'.format(os.path.join(args.save, 'flops.pth')))
+        print('Building model for training/eval...')
     model = getattr(models, args.arch)(args)
 
     if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
@@ -84,6 +88,8 @@ def main():
                                 weight_decay=args.weight_decay)
 
     if args.resume:
+        if args.verbose:
+            print('Resuming from checkpoint...')
         checkpoint = load_checkpoint(args)
         if checkpoint is not None:
             args.start_epoch = checkpoint['epoch'] + 1
@@ -96,11 +102,16 @@ def main():
     train_loader, val_loader, test_loader = get_dataloaders(args)
 
     if args.evalmode is not None:
+        if args.verbose:
+            print('Evaluation mode: {}'.format(args.evalmode))
+            print('Loading checkpoint: {}'.format(args.evaluate_from))
         state_dict = torch.load(args.evaluate_from)['state_dict']
         model.load_state_dict(state_dict)
 
         if args.evalmode == 'anytime':
             probs_path = _build_probs_path(args.save_probs, 'test')
+            if args.verbose and probs_path is not None:
+                print('Saving softmax probabilities to: {}'.format(probs_path))
             validate(test_loader, model, criterion, save_probs_path=probs_path)
         else:
             dynamic_evaluate(model, test_loader, val_loader, args)
@@ -140,6 +151,8 @@ def main():
 
     print('********** Final prediction results **********')
     probs_path = _build_probs_path(args.save_probs, 'test')
+    if args.verbose and probs_path is not None:
+        print('Saving softmax probabilities to: {}'.format(probs_path))
     validate(test_loader, model, criterion, save_probs_path=probs_path)
 
     return 
@@ -218,6 +231,9 @@ def validate(val_loader, model, criterion, save_probs_path=None):
         top1.append(AverageMeter())
         top5.append(AverageMeter())
 
+    if args.verbose:
+        print('Starting evaluation: {} batches'.format(len(val_loader)))
+
     probs = None
     targets = None
     if save_probs_path is not None:
@@ -284,6 +300,10 @@ def validate(val_loader, model, criterion, save_probs_path=None):
         probs = torch.stack(probs, dim=0)
         targets = torch.cat(targets, dim=0)
         torch.save({'probs': probs, 'targets': targets}, save_probs_path)
+        if args.verbose:
+            print('Saved probs to: {}'.format(save_probs_path))
+            print('Probs shape: {}'.format(tuple(probs.size())))
+            print('Targets shape: {}'.format(tuple(targets.size())))
 
     return losses.avg, top1[-1].avg, top5[-1].avg
 

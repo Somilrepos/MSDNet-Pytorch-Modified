@@ -22,6 +22,8 @@ def get_dataloaders(args):
                                     transforms.ToTensor(),
                                     normalize
                                    ]))
+        if args.verbose:
+            print('Dataset: CIFAR10')
     elif args.data == 'cifar100':
         normalize = transforms.Normalize(mean=[0.5071, 0.4867, 0.4408],
                                          std=[0.2675, 0.2565, 0.2761])
@@ -37,6 +39,8 @@ def get_dataloaders(args):
                                         transforms.ToTensor(),
                                         normalize
                                     ]))
+        if args.verbose:
+            print('Dataset: CIFAR100')
     else:
         # ImageNet
         traindir = os.path.join(args.data_root, 'train')
@@ -55,6 +59,10 @@ def get_dataloaders(args):
             transforms.ToTensor(),
             normalize
         ]))
+        if args.verbose:
+            print('Dataset: ImageNet')
+            print('Train dir: {}'.format(traindir))
+            print('Val dir: {}'.format(valdir))
     if args.use_valid:
         train_set_index = torch.randperm(len(train_set))
         if os.path.exists(os.path.join(args.save, 'index.pth')):
@@ -74,28 +82,38 @@ def get_dataloaders(args):
                 sampler=torch.utils.data.sampler.SubsetRandomSampler(
                     train_set_index[:-num_sample_valid]),
                 num_workers=args.workers, pin_memory=True)
+            if args.verbose:
+                print('Train loader: {} samples'.format(len(train_set_index[:-num_sample_valid])))
         if 'val' in args.splits:
             val_loader = torch.utils.data.DataLoader(
                 train_set, batch_size=args.batch_size,
                 sampler=torch.utils.data.sampler.SubsetRandomSampler(
                     train_set_index[-num_sample_valid:]),
                 num_workers=args.workers, pin_memory=True)
+            if args.verbose:
+                print('Val loader (subset): {} samples'.format(len(train_set_index[-num_sample_valid:])))
         if 'test' in args.splits:
             test_loader = torch.utils.data.DataLoader(
                 val_set,
                 batch_size=args.batch_size, shuffle=False,
                 num_workers=args.workers, pin_memory=True)
+            if args.verbose:
+                print('Test loader: {} samples'.format(len(val_set)))
     else:
         if 'train' in args.splits:
             train_loader = torch.utils.data.DataLoader(
                 train_set,
                 batch_size=args.batch_size, shuffle=True,
                 num_workers=args.workers, pin_memory=True)
+            if args.verbose:
+                print('Train loader: {} samples'.format(len(train_set)))
         if 'val' or 'test' in args.splits:
             val_loader = torch.utils.data.DataLoader(
                 val_set,
                 batch_size=args.batch_size, shuffle=False,
                 num_workers=args.workers, pin_memory=True)
             test_loader = val_loader
+            if args.verbose:
+                print('Val/Test loader: {} samples'.format(len(val_set)))
 
     return train_loader, val_loader, test_loader

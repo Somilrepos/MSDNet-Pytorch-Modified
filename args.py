@@ -9,7 +9,7 @@ arg_parser = argparse.ArgumentParser(
                 description='Image classification PK main script')
 
 exp_group = arg_parser.add_argument_group('exp', 'experiment setting')
-exp_group.add_argument('--save', default='save/default-{}'.format(time.time()),
+exp_group.add_argument('--saA', default='save/default-{}'.format(time.time()),
                        type=str, metavar='SAVE',
                        help='path to the experiment logging directory'
                        '(default: save/debug)')
@@ -27,6 +27,8 @@ exp_group.add_argument('--seed', default=0, type=int,
 exp_group.add_argument('--gpu', default=None, type=str, help='GPU available.')
 exp_group.add_argument('--save-probs', default=None, type=str, metavar='PATH',
                        help='path to save per-image softmax probabilities for all exits')
+exp_group.add_argument('--verbose', action='store_true',
+                       help='enable verbose logging')
 
 # dataset related
 data_group = arg_parser.add_argument_group('data', 'dataset setting')
