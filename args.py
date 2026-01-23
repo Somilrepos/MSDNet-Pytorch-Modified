@@ -26,7 +26,7 @@ exp_group.add_argument('--seed', default=0, type=int,
                        help='random seed')
 exp_group.add_argument('--gpu', default=None, type=str, help='GPU available.')
 exp_group.add_argument('--save-probs', default=None, type=str, metavar='PATH',
-                       help='path to save per-image softmax probabilities for all exits')
+                       help='path to save per-image logits for all exits')
 exp_group.add_argument('--verbose', action='store_true',
                        help='enable verbose logging')
 

@@ -114,7 +114,7 @@ def main():
         if args.evalmode == 'anytime':
             probs_path = _build_probs_path(args.save_probs, 'test')
             if args.verbose and probs_path is not None:
-                print('Saving softmax probabilities to: {}'.format(probs_path))
+                print('Saving logits to: {}'.format(probs_path))
             validate(test_loader, model, criterion, save_probs_path=probs_path)
         else:
             dynamic_evaluate(model, test_loader, val_loader, args)
@@ -155,7 +155,7 @@ def main():
     print('********** Final prediction results **********')
     probs_path = _build_probs_path(args.save_probs, 'test')
     if args.verbose and probs_path is not None:
-        print('Saving softmax probabilities to: {}'.format(probs_path))
+        print('Saving logits to: {}'.format(probs_path))
     validate(test_loader, model, criterion, save_probs_path=probs_path)
 
     return 
@@ -237,10 +237,10 @@ def validate(val_loader, model, criterion, save_probs_path=None):
     if args.verbose:
         print('Starting evaluation: {} batches'.format(len(val_loader)))
 
-    probs = None
+    logits = None
     targets = None
     if save_probs_path is not None:
-        probs = [[] for _ in range(args.nBlocks)]
+        logits = [[] for _ in range(args.nBlocks)]
         targets = []
 
     model.eval()
@@ -276,8 +276,7 @@ def validate(val_loader, model, criterion, save_probs_path=None):
 
             if save_probs_path is not None:
                 for j in range(len(output)):
-                    prob = F.softmax(output[j], dim=1)
-                    probs[j].append(prob.detach().cpu())
+                    logits[j].append(output[j].detach().cpu())
                 targets.append(target.detach().cpu())
 
             # measure elapsed time
@@ -299,13 +298,13 @@ def validate(val_loader, model, criterion, save_probs_path=None):
     # print(' * prec@1 {top1.avg:.3f} prec@5 {top5.avg:.3f}'.format(top1=top1[-1], top5=top5[-1]))
 
     if save_probs_path is not None:
-        probs = [torch.cat(p, dim=0) for p in probs]
-        probs = torch.stack(probs, dim=0)
+        logits = [torch.cat(p, dim=0) for p in logits]
+        logits = torch.stack(logits, dim=0)
         targets = torch.cat(targets, dim=0)
-        torch.save({'probs': probs, 'targets': targets}, save_probs_path)
+        torch.save({'logits': logits, 'targets': targets}, save_probs_path)
         if args.verbose:
-            print('Saved probs to: {}'.format(save_probs_path))
-            print('Probs shape: {}'.format(tuple(probs.size())))
+            print('Saved logits to: {}'.format(save_probs_path))
+            print('Logits shape: {}'.format(tuple(logits.size())))
             print('Targets shape: {}'.format(tuple(targets.size())))
 
     return losses.avg, top1[-1].avg, top5[-1].avg
@@ -405,7 +404,7 @@ def _build_probs_path(base_path, split_name):
     if base_path.endswith('.pt') or base_path.endswith('.pth'):
         return base_path
     os.makedirs(base_path, exist_ok=True)
-    return os.path.join(base_path, 'softmax_probs_{}.pth'.format(split_name))
+    return os.path.join(base_path, 'logits_{}.pth'.format(split_name))
 
 if __name__ == '__main__':
     main()

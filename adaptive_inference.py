@@ -4,7 +4,6 @@ from __future__ import print_function
 from __future__ import division
 
 import torch
-import torch.nn as nn
 import os
 import math
 
@@ -22,16 +21,16 @@ def dynamic_evaluate(model, test_loader, val_loader, args):
     if args.save_probs is not None:
         probs_path = _build_probs_path(args.save_probs, 'dynamic')
         if args.verbose:
-            print('Saving softmax probabilities to: {}'.format(probs_path))
+            print('Saving logits to: {}'.format(probs_path))
         torch.save({
-            'val_probs': val_pred,
+            'val_logits': val_pred,
             'val_targets': val_target,
-            'test_probs': test_pred,
+            'test_logits': test_pred,
             'test_targets': test_target,
         }, probs_path)
         if args.verbose:
-            print('Val probs shape: {}'.format(tuple(val_pred.size())))
-            print('Test probs shape: {}'.format(tuple(test_pred.size())))
+            print('Val logits shape: {}'.format(tuple(val_pred.size())))
+            print('Test logits shape: {}'.format(tuple(test_pred.size())))
 
     flops = torch.load(os.path.join(args.save, 'flops.pth'))
 
@@ -53,7 +52,6 @@ class Tester(object):
     def __init__(self, model, args=None):
         self.args = args
         self.model = model
-        self.softmax = nn.Softmax(dim=1).cuda()
 
     def calc_logit(self, dataloader):
         self.model.eval()
@@ -68,9 +66,7 @@ class Tester(object):
                 if not isinstance(output, list):
                     output = [output]
                 for b in range(n_stage):
-                    _t = self.softmax(output[b])
-
-                    logits[b].append(_t) 
+                    logits[b].append(output[b].detach().cpu())
 
             if i % self.args.print_freq == 0: 
                 print('Generate Logit: [{0}/{1}]'.format(i, len(dataloader)))
@@ -167,4 +163,4 @@ def _build_probs_path(base_path, split_name):
     if base_path.endswith('.pt') or base_path.endswith('.pth'):
         return base_path
     os.makedirs(base_path, exist_ok=True)
-    return os.path.join(base_path, 'softmax_probs_{}.pth'.format(split_name))
+    return os.path.join(base_path, 'logits_{}.pth'.format(split_name))
