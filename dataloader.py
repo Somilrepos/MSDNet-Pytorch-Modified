@@ -60,12 +60,15 @@ def get_dataloaders(args):
                 transforms.ToTensor(),
                 normalize
             ]))
-        val_set = datasets.ImageFolder(valdir, transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            normalize
-        ]))
+        need_val = args.use_valid or args.evalmode == 'dynamic' or args.eval_split in ['val', 'test']
+        val_set = None
+        if need_val:
+            val_set = datasets.ImageFolder(valdir, transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                normalize
+            ]))
         if args.verbose:
             print('Dataset: ImageNet')
             print('Train dir: {}'.format(traindir))
@@ -114,7 +117,7 @@ def get_dataloaders(args):
                 num_workers=args.workers, pin_memory=True)
             if args.verbose:
                 print('Train loader: {} samples'.format(len(train_set)))
-        if 'val' in args.splits or 'test' in args.splits:
+        if ('val' in args.splits or 'test' in args.splits) and val_set is not None:
             val_loader = torch.utils.data.DataLoader(
                 val_set,
                 batch_size=args.batch_size, shuffle=False,
