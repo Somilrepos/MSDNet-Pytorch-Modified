@@ -110,14 +110,21 @@ def main():
             print('Loading checkpoint: {}'.format(args.evaluate_from))
         state_dict = torch.load(args.evaluate_from)['state_dict']
         model.load_state_dict(state_dict)
+        eval_loader = {
+            'train': train_loader,
+            'val': val_loader,
+            'test': test_loader,
+        }[args.eval_split]
+        if eval_loader is None:
+            raise ValueError('Requested eval split "{}" is not available.'.format(args.eval_split))
 
         if args.evalmode == 'anytime':
-            probs_path = _build_probs_path(args.save_probs, 'test')
+            probs_path = _build_probs_path(args.save_probs, args.eval_split)
             if args.verbose and probs_path is not None:
                 print('Saving logits to: {}'.format(probs_path))
-            validate(test_loader, model, criterion, save_probs_path=probs_path)
+            validate(eval_loader, model, criterion, save_probs_path=probs_path)
         else:
-            dynamic_evaluate(model, test_loader, val_loader, args)
+            dynamic_evaluate(model, eval_loader, val_loader, args)
         return
 
     scores = ['epoch\tlr\ttrain_loss\tval_loss\ttrain_prec1'

@@ -7,7 +7,7 @@ import os
 
 def get_dataloaders(args):
     train_loader, val_loader, test_loader = None, None, None
-    eval_only = args.evalmode is not None and not args.use_valid
+    eval_only = args.evalmode is not None and not args.use_valid and args.eval_split != 'train'
     if args.data == 'cifar10':
         normalize = transforms.Normalize(mean=[0.4914, 0.4824, 0.4467],
                                          std=[0.2471, 0.2435, 0.2616])

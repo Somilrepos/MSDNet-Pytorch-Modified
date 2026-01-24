@@ -9,17 +9,20 @@ import math
 
 def dynamic_evaluate(model, test_loader, val_loader, args):
     tester = Tester(model, args)
-    if os.path.exists(os.path.join(args.save, 'logits_single.pth')): 
+    split_name = getattr(args, 'eval_split', 'test')
+    cache_name = 'logits_single_{}.pth'.format(split_name)
+    cache_path = os.path.join(args.save, cache_name)
+    if os.path.exists(cache_path): 
         val_pred, val_target, test_pred, test_target = \
-            torch.load(os.path.join(args.save, 'logits_single.pth')) 
+            torch.load(cache_path) 
     else: 
         val_pred, val_target = tester.calc_logit(val_loader) 
         test_pred, test_target = tester.calc_logit(test_loader) 
         torch.save((val_pred, val_target, test_pred, test_target), 
-                    os.path.join(args.save, 'logits_single.pth'))
+                    cache_path)
 
     if args.save_probs is not None:
-        probs_path = _build_probs_path(args.save_probs, 'dynamic')
+        probs_path = _build_probs_path(args.save_probs, 'dynamic_{}'.format(split_name))
         if args.verbose:
             print('Saving logits to: {}'.format(probs_path))
         torch.save({

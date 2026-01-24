@@ -18,6 +18,9 @@ exp_group.add_argument('--resume', action='store_true',
 exp_group.add_argument('--evalmode', default=None,
                        choices=['anytime', 'dynamic'],
                        help='which mode to evaluate')
+exp_group.add_argument('--eval-split', default='test',
+                       choices=['train', 'val', 'test'],
+                       help='which split to evaluate in evalmode (default: test)')
 exp_group.add_argument('--evaluate-from', default=None, type=str, metavar='PATH',
                        help='path to saved checkpoint (default: none)')
 exp_group.add_argument('--print-freq', '-p', default=10, type=int,
