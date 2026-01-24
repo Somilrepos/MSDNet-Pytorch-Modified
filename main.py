@@ -285,6 +285,14 @@ def validate(val_loader, model, criterion, save_probs_path=None):
                 for j in range(len(output)):
                     logits[j].append(output[j].detach().cpu())
                 targets.append(target.detach().cpu())
+                if args.save_probs_interval > 0 and (i + 1) % args.save_probs_interval == 0:
+                    partial_logits = [torch.cat(p, dim=0) for p in logits]
+                    partial_logits = torch.stack(partial_logits, dim=0)
+                    partial_targets = torch.cat(targets, dim=0)
+                    torch.save(
+                        {'logits': partial_logits, 'targets': partial_targets},
+                        save_probs_path + '.partial'
+                    )
 
             # measure elapsed time
             batch_time.update(time.time() - end)
